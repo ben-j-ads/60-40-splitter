@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The 60/40 Splitter</title>
+  <style>
+    :root {
+      --bg: #121317;
+      --panel: #1b1d24;
+      --panel-2: #14161c;
+      --line: #2a2e39;
+      --text: #e9e9ec;
+      --muted: #9a9ca6;
+      --banana: #ffe135;
+      --act: #4a5263;
+      --act-text: #e9e9ec;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px 16px 48px;
+      background:
+        radial-gradient(1200px 500px at 50% -200px, rgba(255, 225, 53, 0.08), transparent),
+        var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    h1 { color: var(--banana); margin: 0; font-size: 2rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.1rem; margin: 0 0 12px; }
+    .subtitle { color: var(--muted); margin: 4px 0 20px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--banana); outline-offset: 2px; }
+
+    /* Split bar */
+    .split {
+      display: flex;
+      height: 76px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .seg {
+      flex: 0 0 auto;
+      transition: flex-basis 0.45s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 14px;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .seg-brand { background: var(--banana); color: #111; }
+    .seg-act { background: var(--act); color: var(--act-text); }
+    .seg-name { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.85; }
+    .seg-amount { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .seg-pct { font-size: 0.85rem; font-variant-numeric: tabular-nums; opacity: 0.85; }
+    .split-legend { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
+
+    /* Controls */
+    .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-head { color: var(--muted); font-size: 0.92rem; }
+    select, input[type="text"] {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid #3a3e4a;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: inherit;
+      width: 100%;
+    }
+    select:hover, input[type="text"]:hover { border-color: var(--banana); }
+    input[type="range"] { width: 100%; accent-color: var(--banana); margin: 0; }
+    .budget-row { display: flex; gap: 12px; align-items: center; }
+    .budget-row input[type="text"] { flex: 0 0 170px; }
+    .budget-row input[type="range"] { flex: 1; }
+    .scale { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+    .full { grid-column: 1 / -1; }
+    @media (max-width: 560px) {
+      .controls-grid { grid-template-columns: 1fr; }
+      .budget-row { flex-wrap: wrap; }
+      .budget-row input[type="text"] { flex: 1 1 100%; }
+    }
+
+    details.explain { margin: 0; color: var(--muted); font-size: 0.88rem; }
+    details.explain summary { cursor: pointer; color: var(--banana); list-style: none; display: inline-block; }
+    details.explain summary::-webkit-details-marker { display: none; }
+    details.explain summary::before { content: "ⓘ "; }
+    details.explain p { margin: 6px 0 0; padding: 10px 12px; background: var(--panel-2); border-radius: 8px; }
+
+    /* Readouts */
+    .plain {
+      background: var(--panel-2);
+      border-left: 3px solid var(--banana);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.97rem;
+      margin-bottom: 18px;
+    }
+    .plain b { color: var(--banana); font-weight: 600; }
+    .readouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+    .stat-label { color: var(--muted); font-size: 0.82rem; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0 4px; }
+    .stat-value.accent { color: var(--banana); }
+    .stat-help { color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
+
+    /* Learn section */
+    details.learn { border-top: 1px solid var(--line); padding: 12px 0; }
+    details.learn:first-of-type { border-top: 0; padding-top: 0; }
+    details.learn summary { cursor: pointer; font-weight: 600; color: var(--text); }
+    details.learn summary:hover { color: var(--banana); }
+    details.learn .body { color: var(--muted); font-size: 0.95rem; margin-top: 10px; }
+    details.learn .body p { margin: 0 0 10px; }
+    .sides { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 560px) { .sides { grid-template-columns: 1fr; } }
+    .side { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px; color: var(--muted); font-size: 0.93rem; }
+    .side h3 { margin: 0 0 6px; font-size: 1rem; color: var(--text); }
+    .side .tag { display: inline-block; font-size: 0.78rem; padding: 2px 8px; border-radius: 999px; margin-bottom: 8px; }
+    .side-brand .tag { background: var(--banana); color: #111; }
+    .side-act .tag { background: var(--act); color: var(--act-text); }
+    .side ul { margin: 0; padding-left: 18px; }
+    .side li { margin-bottom: 4px; }
+    .formula {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+    table.steps { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; margin: 8px 0; }
+    table.steps th, table.steps td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+    table.steps th { color: var(--muted); font-weight: 500; }
+    table.steps td:first-child, table.steps th:first-child { text-align: left; }
+    table.steps tr.total td { color: var(--banana); font-weight: 600; }
+    .glossary dt { color: var(--banana); font-weight: 600; margin-top: 8px; }
+    .glossary dd { margin: 2px 0 0 0; }
+
+    /* Caveats */
+    .caveats p { color: var(--muted); font-size: 0.95rem; margin: 0 0 10px; }
+    .caveats p:last-child { margin-bottom: 0; }
+    .caveats b { color: var(--text); font-weight: 600; }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 1.6rem; }
+      .panel { padding: 14px; }
+      .stat-value { font-size: 1.35rem; }
+      .seg-amount { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>The 60/40 Splitter</h1>
+    <p class="subtitle">A starting point for splitting a budget between long-term brand building and short-term activation, based on the Binet &amp; Field long-and-short rule.</p>
+
+    <section class="panel">
+      <div class="split" role="img" aria-label="Budget split between brand and activation">
+        <div class="seg seg-brand" id="seg-brand"></div>
+        <div class="seg seg-act" id="seg-act"></div>
+      </div>
+      <div class="split-legend">
+        <span>Brand: long-term</span>
+        <span>Activation: short-term</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="controls-grid">
+        <label class="field full">
+          <span class="field-head">Total annual budget</span>
+          <div class="budget-row">
+            <input type="text" inputmode="numeric" id="budget-num" autocomplete="off">
+            <input type="range" id="budget" min="0" max="1000" step="1">
+          </div>
+          <div class="scale"><span>$10k</span><span>$100k</span><span>$1M</span><span>$10M</span><span>$100M</span></div>
+        </label>
+        <div class="field full">
+          <details class="explain">
+            <summary>Why is the budget slider on a log scale?</summary>
+            <p>$10k and $100M are a factor of 10,000 apart. On a straight slider, the low end would be squeezed into a sliver. A log scale gives each power of ten the same amount of room, so $10k to $100k is as easy to move through as $10M to $100M. The number box lets you type any exact amount.</p>
+          </details>
+        </div>
+
+        <label class="field">
+          <span class="field-head">Purchase cycle</span>
+          <select id="cycle">
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+            <option value="years">Years</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-head">Brand size</span>
+          <select id="size">
+            <option value="startup">Startup</option>
+            <option value="challenger">Challenger</option>
+            <option value="leader">Established leader</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-head">Price tier</span>
+          <select id="tier">
+            <option value="value">Value</option>
+            <option value="mainstream">Mainstream</option>
+            <option value="premium">Premium</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>In plain English</h2>
+      <div class="plain" id="plain"></div>
+      <div class="readouts">
+        <div class="stat">
+          <div class="stat-label">Brand dollars</div>
+          <div class="stat-value accent" id="brand-usd"></div>
+          <div class="stat-help" id="brand-help"></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Activation dollars</div>
+          <div class="stat-value" id="act-usd"></div>
+          <div class="stat-help" id="act-help"></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Effective ratio</div>
+          <div class="stat-value" id="ratio"></div>
+          <div class="stat-help">Brand / activation, as percentages of the budget.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>What each side buys</h2>
+      <div class="sides">
+        <div class="side side-brand">
+          <span class="tag">Brand</span>
+          <h3>Mental availability</h3>
+          <ul>
+            <li>Works over roughly 6 to 36 months.</li>
+            <li>Effects are broad: penetration (how many people buy at all) and pricing power.</li>
+            <li>Builds the reason people think of your brand when the category comes up.</li>
+          </ul>
+        </div>
+        <div class="side side-act">
+          <span class="tag">Activation</span>
+          <h3>Harvesting existing demand</h3>
+          <ul>
+            <li>Works over roughly 0 to 6 months.</li>
+            <li>Effects are narrow: immediate sales, mostly from people who would have bought anyway.</li>
+            <li>Captures demand that already exists rather than creating new demand.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Learn how it works</h2>
+
+      <details class="learn">
+        <summary>The rule, in words</summary>
+        <div class="body">
+          <p>Start at 60% for brand and 40% for activation. Then nudge the split for three things about your situation. Each nudge moves the brand share by 10 points.</p>
+          <div class="formula">Brand share = 60 + cycle shift + size shift + price shift
+Brand share is kept between 30% and 85%
+Activation share = 100 − brand share</div>
+          <p>A longer purchase cycle, a smaller brand, or a premium price all mean people take longer to decide and need more reminding, so brand building pays off more. A short cycle, an established leader, or a value price push the money toward activation.</p>
+        </div>
+      </details>
+
+      <details class="learn">
+        <summary>The math, with your current inputs</summary>
+        <div class="body" id="worked"></div>
+      </details>
+
+      <details class="learn">
+        <summary>Glossary</summary>
+        <div class="body">
+          <dl class="glossary">
+            <dt>Brand building</dt><dd>Spend that builds long-term mental availability, so your brand comes to mind when people are ready to buy.</dd>
+            <dt>Activation</dt><dd>Spend that prompts a purchase now, such as promotions or direct response. It mostly reaches people already in the market.</dd>
+            <dt>Mental availability</dt><dd>How easily your brand comes to mind in buying situations.</dd>
+            <dt>Penetration</dt><dd>The share of category buyers who buy your brand at least once in a period.</dd>
+            <dt>Pricing power</dt><dd>The ability to charge a higher price without losing buyers.</dd>
+            <dt>Purchase cycle</dt><dd>How often people buy in the category. Days, weeks, months, or years between purchases.</dd>
+            <dt>Clamp</dt><dd>Limiting a value to a fixed range. Here, the brand share stays between 30% and 85%.</dd>
+          </dl>
+        </div>
+      </details>
+    </section>
+
+    <section class="panel caveats">
+      <h2>Read this before you use the split</h2>
+      <p><b>60/40 is a cross-category average.</b> It comes from the IPA Databank, which covers many categories and brands. Any single category can need a very different split.</p>
+      <p><b>The right split moves with the inputs.</b> The purchase cycle, brand size, and price tier all change the answer, and this tool only adjusts for those three. It doesn't know about your competitors, your channels, or your current share.</p>
+      <p><b>This is a starting heuristic, not a media plan.</b> Use it to set a first conversation, then test and adjust against your own results.</p>
+    </section>
+  </div>
+
+  <script>
+    // ---------- Allocation logic ----------
+    // Start at 60% brand / 40% activation, then shift by the three inputs.
+
+    const BASE_BRAND = 60;   // starting brand share, in percent
+    const SHIFT = 10;        // each input moves the brand share by this many points
+    const CLAMP_MIN = 30;    // brand share never goes below this
+    const CLAMP_MAX = 85;    // brand share never goes above this
+
+    const BUDGET_MIN = 10000;
+    const BUDGET_MAX = 100000000;
+
+    // Purchase cycle: longer cycles favor brand building.
+    function cycleShift(cycle) {
+      if (cycle === 'months' || cycle === 'years') return SHIFT;
+      if (cycle === 'days') return -SHIFT;
+      return 0; // weeks: not in the rule, so neutral
+    }
+
+    // Brand size: smaller brands favor brand building.
+    function sizeShift(size) {
+      if (size === 'startup' || size === 'challenger') return SHIFT;
+      if (size === 'leader') return -SHIFT;
+      return 0;
+    }
+
+    // Price tier: premium favors brand building, value favors activation.
+    function priceShift(tier) {
+      if (tier === 'premium') return SHIFT;
+      if (tier === 'value') return -SHIFT;
+      return 0; // mainstream: not in the rule, so neutral
+    }
+
+    // Brand share (percent) plus the steps that produced it.
+    function brandShare(inputs) {
+      const steps = [
+        { label: 'Starting point', delta: BASE_BRAND },
+        { label: 'Purchase cycle', delta: cycleShift(inputs.cycle) },
+        { label: 'Brand size', delta: sizeShift(inputs.size) },
+        { label: 'Price tier', delta: priceShift(inputs.tier) },
+      ];
+      const raw = steps.reduce((sum, s) => sum + s.delta, 0);
+      const final = Math.min(CLAMP_MAX, Math.max(CLAMP_MIN, raw));
+      return { raw, final, steps, clamped: final !== raw };
+    }
+
+    // Split a budget in dollars. Activation takes the remainder, so the two
+    // sides always add up to the budget exactly.
+    function allocate(budget, inputs) {
+      const share = brandShare(inputs);
+      const brandPct = share.final;
+      const activationPct = 100 - brandPct;
+      const brandDollars = Math.round((budget * brandPct) / 100);
+      const activationDollars = budget - brandDollars;
+      return { brandPct, activationPct, brandDollars, activationDollars, share };
+    }
+
+    // Log-scale slider: position 0..1000 maps to $10k..$100M.
+    function sliderToBudget(pos) {
+      const raw = BUDGET_MIN * Math.pow(BUDGET_MAX / BUDGET_MIN, pos / 1000);
+      return Math.round(raw / 100) * 100; // round to the nearest $100
+    }
+
+    function budgetToSlider(budget) {
+      return Math.round((1000 * Math.log(budget / BUDGET_MIN)) / Math.log(BUDGET_MAX / BUDGET_MIN));
+    }
+
+    // ---------- Text helpers ----------
+    const $ = (id) => document.getElementById(id);
+    const usd = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+    const pctText = (p) => p.toFixed(0) + '%';
+    const signed = (n) => (n > 0 ? '+' : '') + n;
+
+    // The budget box shows commas (5,000,000), so strip them before reading.
+    const parseBudget = (text) => Number(String(text).replace(/[^0-9.]/g, ''));
+    const fmtBudget = (n) => n.toLocaleString('en-US');
+
+    const cycleWords = { days: 'days', weeks: 'weeks', months: 'months', years: 'years' };
+    const sizeWords = { startup: 'a startup', challenger: 'a challenger', leader: 'an established leader' };
+    const tierWords = { value: 'value', mainstream: 'mainstream', premium: 'premium' };
+
+    // Read the current inputs from the page.
+    function readInputs() {
+      return {
+        budget: parseBudget($('budget-num').value),
+        cycle: $('cycle').value,
+        size: $('size').value,
+        tier: $('tier').value,
+      };
+    }
+
+    // ---------- Rendering ----------
+    function render() {
+      const inp = readInputs();
+      if (!Number.isFinite(inp.budget) || inp.budget <= 0) return;
+
+      const a = allocate(inp.budget, inp);
+
+      // Split bar: the flex-basis transition animates the change.
+      $('seg-brand').style.flexBasis = a.brandPct + '%';
+      $('seg-act').style.flexBasis = a.activationPct + '%';
+      $('seg-brand').innerHTML =
+        `<span class="seg-name">Brand</span><span class="seg-amount">${usd(a.brandDollars)}</span><span class="seg-pct">${pctText(a.brandPct)}</span>`;
+      $('seg-act').innerHTML =
+        `<span class="seg-name">Activation</span><span class="seg-amount">${usd(a.activationDollars)}</span><span class="seg-pct">${pctText(a.activationPct)}</span>`;
+
+      $('brand-usd').textContent = usd(a.brandDollars);
+      $('act-usd').textContent = usd(a.activationDollars);
+      $('brand-help').textContent = `${pctText(a.brandPct)} of the budget, working over 6 to 36 months.`;
+      $('act-help').textContent = `${pctText(a.activationPct)} of the budget, working over 0 to 6 months.`;
+      $('ratio').textContent = `${a.brandPct}/${a.activationPct}`;
+
+      const clampNote = a.share.clamped
+        ? ` The raw value of ${a.share.raw}% was limited to ${a.brandPct}%.`
+        : '';
+      $('plain').innerHTML =
+        `For a <b>${usd(inp.budget)}</b> budget, with a <b>${cycleWords[inp.cycle]}</b> purchase cycle, ` +
+        `${sizeWords[inp.size]} brand, and <b>${tierWords[inp.tier]}</b> pricing, the split is ` +
+        `<b>${a.brandPct}% brand</b> and <b>${a.activationPct}% activation</b>.${clampNote}`;
+
+      $('worked').innerHTML = renderWorked(inp, a);
+    }
+
+    function renderWorked(inp, a) {
+      const rows = a.share.steps.map((s, i) => {
+        const delta = i === 0 ? s.delta + '%' : signed(s.delta) + ' pts';
+        return `<tr><td>${s.label}</td><td>${delta}</td></tr>`;
+      }).join('');
+      return `
+        <table class="steps">
+          <tr><th>Step</th><th>Change</th></tr>
+          ${rows}
+          <tr><td>Raw brand share</td><td>${a.share.raw}%</td></tr>
+          <tr class="total"><td>After clamping to 30–85%</td><td>${a.brandPct}%</td></tr>
+        </table>
+        <p><b>Dollars.</b> Brand: ${usd(inp.budget)} × ${a.brandPct}% = ${usd(a.brandDollars)}. Activation: ${usd(inp.budget)} − ${usd(a.brandDollars)} = ${usd(a.activationDollars)}.</p>
+      `;
+    }
+
+    // ---------- Wiring ----------
+    function setBudget(value) {
+      const b = Math.min(BUDGET_MAX, Math.max(BUDGET_MIN, Math.round(value)));
+      $('budget-num').value = fmtBudget(b);
+      $('budget').value = budgetToSlider(b);
+    }
+
+    $('budget').addEventListener('input', () => {
+      $('budget-num').value = fmtBudget(sliderToBudget(Number($('budget').value)));
+      render();
+    });
+
+    $('budget-num').addEventListener('input', () => {
+      const v = parseBudget($('budget-num').value);
+      if (!Number.isFinite(v) || v <= 0) return;
+      const clamped = Math.min(BUDGET_MAX, Math.max(BUDGET_MIN, v));
+      $('budget').value = budgetToSlider(clamped);
+      render();
+    });
+
+    // On leaving the box, reformat and clamp whatever was typed.
+    $('budget-num').addEventListener('change', () => {
+      setBudget(parseBudget($('budget-num').value) || BUDGET_MIN);
+      render();
+    });
+
+    ['cycle', 'size', 'tier'].forEach((id) => $(id).addEventListener('change', render));
+
+    // Starting point: $5M budget, months cycle, challenger brand, mainstream pricing.
+    setBudget(5000000);
+    $('cycle').value = 'months';
+    $('size').value = 'challenger';
+    $('tier').value = 'mainstream';
+    render();
+  </script>
+</body>
+</html>
