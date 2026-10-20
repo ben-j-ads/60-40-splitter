@@ -13,3 +13,5 @@ Open `index.html` in any browser. No build step and no dependencies.
 - **Limits:** brand share stays between 30% and 85%.
 
 60/40 is a cross-category average from the IPA Databank. This is a starting heuristic, not a media plan.
+
+Styled to the ben.j.ads brand: paper ground, Bricolage Grotesque Condensed and Archivo (bundled in `fonts/`, SIL OFL), lime as a mark only. Still no build step and no external requests.
